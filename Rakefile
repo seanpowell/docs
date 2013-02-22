@@ -437,24 +437,40 @@ desc "Generate a PDF version of the documentation"
 task :generate_pdf do
 
   htmlfiles = File.join("**", "public", "**", "*.html")
-  
+  excludes = ["search.html","apiworkship.html"]
+
   #make sure output folder exists
   FileUtils.mkdir_p("pdf")
 
   Dir.glob htmlfiles do |htmlfile|
-    output_path = htmlfile.sub('public/','pdf/').sub('.html','.pdf').gsub('(','\(').gsub(')','\)')
+    return if excludes.include? htmlfile
+    output_html = htmlfile.sub('public/','pdf/')
+    output_pdf = htmlfile.sub('public/','pdf/').sub('.html','.pdf').gsub('(','\(').gsub(')','\)')
     
+    file = File.open(htmlfile)
+    contents = file.read
+    file.close
+
+    contents = contents.sub('</head>','<link href="http://localhost:4000/stylesheets/print.css" rel="stylesheet" type="text/css"></head>')
+    contents = contents.sub(/<aside(.*?)<\/aside>/m,'')
+    contents = contents.sub('<article role="article" class="span9">','<article role="article">')
+    contents = contents.gsub('media="screen, projection"','')
+
+    file = File.new(output_html,"w")
+    file.write(contents)
+    file.close
+
     #make sure output subfolder exists
-    FileUtils.mkdir_p(File.dirname(output_path))
+    FileUtils.mkdir_p(File.dirname(output_pdf))
 
     puts "Writing PDF for #{htmlfile}"
 
-    switches = "--user-style-sheet public/stylesheets/print.css"
-    command = "wkhtmltopdf #{htmlfile.gsub('(','\(').gsub(')','\)')} #{switches} #{output_path}"
+    #switches = "--user-style-sheet public/stylesheets/print.css"
+    command = "wkhtmltopdf #{output_html.gsub('(','\(').gsub(')','\)')} #{output_pdf}"
     
     #begin
       puts command
-      #pdf = system("wkhtmltopdf #{htmlfile.gsub('(','\(').gsub(')','\)')} #{switches} #{output_path}") 
+      pdf = system(command) 
     #rescue Exception => msg 
       #puts "failed on #{htmlfile}"
       #puts msg
