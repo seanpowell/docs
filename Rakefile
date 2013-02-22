@@ -445,8 +445,9 @@ task :generate_pdf do
   Dir.glob htmlfiles do |htmlfile|
     return if excludes.include? htmlfile
     output_html = htmlfile.sub('public/','pdf/')
-    output_pdf = htmlfile.sub('public/','pdf/').sub('.html','.pdf').gsub('(','\(').gsub(')','\)')
-    
+    output_pdf = htmlfile.sub('public/','pdf/').sub('.html','.pdf')
+    output_pdf_tmp = htmlfile.sub('public/','pdf/').sub('.html','.pdf.tmp')
+
     file = File.open(htmlfile)
     contents = file.read
     file.close
@@ -466,11 +467,11 @@ task :generate_pdf do
     puts "Writing PDF for #{htmlfile}"
 
     #switches = "--user-style-sheet public/stylesheets/print.css"
-    command = "wkhtmltopdf #{output_html.gsub('(','\(').gsub(')','\)')} #{output_pdf}"
+    command = "wkhtmltopdf \"#{output_html}\" \"#{output_pdf_tmp}\""
     
     begin
       puts command
-      #pdf = system(command) 
+      pdf = system(command) 
     rescue Exception => msg 
       puts "failed on #{htmlfile}"
       puts msg
@@ -478,8 +479,7 @@ task :generate_pdf do
 
     #optimize the PDFs using ghostscript?
     puts "optimizing #{output_pdf}"
-    command = "gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -sOutputFile=#{output_pdf} #{output_pdf}"
-    puts command
+    command = "gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -sOutputFile=\"#{output_pdf}\" \"#{output_pdf_tmp}\""
     system(command)
   end
 end
