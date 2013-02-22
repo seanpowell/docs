@@ -468,12 +468,15 @@ task :generate_pdf do
     #switches = "--user-style-sheet public/stylesheets/print.css"
     command = "wkhtmltopdf #{output_html.gsub('(','\(').gsub(')','\)')} #{output_pdf}"
     
-    #begin
+    begin
       puts command
       pdf = system(command) 
-    #rescue Exception => msg 
-      #puts "failed on #{htmlfile}"
-      #puts msg
-    #end
+    rescue Exception => msg 
+      puts "failed on #{htmlfile}"
+      puts msg
+    end
+
+    #optimize the PDFs using ghostscript?
+    #gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -sOutputFile=test.pdf pdf/index.pdx
   end
 end
