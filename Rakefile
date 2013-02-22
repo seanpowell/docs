@@ -470,13 +470,16 @@ task :generate_pdf do
     
     begin
       puts command
-      pdf = system(command) 
+      #pdf = system(command) 
     rescue Exception => msg 
       puts "failed on #{htmlfile}"
       puts msg
     end
 
     #optimize the PDFs using ghostscript?
-    #gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -sOutputFile=test.pdf pdf/index.pdx
+    puts "optimizing #{output_pdf}"
+    command = "gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -sOutputFile=#{output_pdf} #{output_pdf}"
+    puts command
+    system(command)
   end
 end
