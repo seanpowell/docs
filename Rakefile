@@ -445,28 +445,31 @@ task :generate_pdf do
   Dir.glob htmlfiles do |htmlfile|
     return if excludes.include? htmlfile
     output_html = htmlfile.sub('public/','pdf/')
-    output_pdf = htmlfile.sub('public/','pdf/').sub('.html','.pdf')
-    output_pdf_tmp = htmlfile.sub('public/','pdf/').sub('.html','.pdf.tmp')
+    output_pdf = htmlfile.sub('public/','pdf_optimized/').sub('.html','.pdf')
+    output_pdf_tmp = htmlfile.sub('public/','public/pdf/').sub('.html','.pdf')
 
     file = File.open(htmlfile)
     contents = file.read
     file.close
 
-    contents = contents.sub('</head>','<link href="http://localhost:4000/stylesheets/print.css" rel="stylesheet" type="text/css"></head>')
+    #completely remove the sidebar
     contents = contents.sub(/<aside(.*?)<\/aside>/m,'')
+
+    #make the article span the whole page
     contents = contents.sub('<article role="article" class="span9">','<article role="article">')
-    contents = contents.gsub('media="screen, projection"','')
+
+    contents = contents.sub('<a href="http://localhost:4000/index.html">Documentation</a>',
+                            '<a href="http://localhost:4000/index.html">SendGrid Documentation</a>')
 
     file = File.new(output_html,"w")
     file.write(contents)
     file.close
 
     #make sure output subfolder exists
+    FileUtils.mkdir_p(File.dirname(output_pdf_tmp))
     FileUtils.mkdir_p(File.dirname(output_pdf))
-
     puts "Writing PDF for #{htmlfile}"
 
-    #switches = "--user-style-sheet public/stylesheets/print.css"
     command = "wkhtmltopdf \"#{output_html}\" \"#{output_pdf_tmp}\""
     
     begin
@@ -477,9 +480,10 @@ task :generate_pdf do
       puts msg
     end
 
-    #optimize the PDFs using ghostscript?
-    puts "optimizing #{output_pdf}"
-    command = "gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -sOutputFile=\"#{output_pdf}\" \"#{output_pdf_tmp}\""
-    system(command)
+    #optimize the PDFs using ghostscript
+    #make this optional via params
+    #puts "optimizing #{output_pdf}"
+    #command = "gs -dNOPAUSE -dBATCH -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -sOutputFile=\"#{output_pdf}\" \"#{output_pdf_tmp}\""
+    #system(command)
   end
 end
