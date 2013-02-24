@@ -4,7 +4,7 @@ require "stringex"
 require "nokogiri"
 require "time"
 require "shellwords"
-require "prawn"
+require "pty"
 
 ## -- Rsync Deploy config -- ##
 # Be sure your public key is listed in your server's ~/.ssh/authorized_keys file
@@ -471,14 +471,22 @@ task :generate_pdf do
     puts "Writing PDF for #{htmlfile}"
 
     command = "wkhtmltopdf \"#{output_html}\" \"#{output_pdf_tmp}\""
-    
+
+    #there's a bug in wkhtmltopdf on OS X where the process hangs
+    #so let's watch spawn a pseudo terminal and watch
+    #stdout for "Done" and kill the process
     begin
-      puts command
-      pdf = system(command) 
-    rescue Exception => msg 
-      puts "failed on #{htmlfile}"
-      puts msg
+      i=0
+      PTY.spawn( command ) do |stdout, stdin, pid|
+        stdout.each { |line|
+          i=i+1 
+          Process.kill("KILL",pid) if i==3
+        }
+      end
+    rescue PTY::ChildExited
+      puts "The child process exited!"
     end
+
 
     #optimize the PDFs using ghostscript
     #make this optional via params
