@@ -446,11 +446,14 @@ task :generate_pdf do
     return if excludes.include? htmlfile
     output_html = htmlfile.sub('public/','pdf/')
     output_pdf = htmlfile.sub('public/','pdf_optimized/').sub('.html','.pdf')
-    output_pdf_tmp = htmlfile.sub('public/','public/pdf/').sub('.html','.pdf')
+    output_pdf_tmp = htmlfile.sub('public/','pdf/').sub('.html','.pdf')
 
     file = File.open(htmlfile)
     contents = file.read
     file.close
+    
+    #manually add the "print" style since wkhtmltopdf is bugged
+    contents = contents.sub '<script type="text/javascript">','<link href="http://localhost:4000/stylesheets/pdf.css" media="screen, projection, print" rel="stylesheet" type="text/css"><script type="text/javascript">'
 
     #completely remove the sidebar
     contents = contents.sub(/<aside(.*?)<\/aside>/m,'')
@@ -461,6 +464,8 @@ task :generate_pdf do
     contents = contents.sub('<a href="http://localhost:4000/index.html">Documentation</a>',
                             '<a href="http://localhost:4000/index.html">SendGrid Documentation</a>')
 
+    FileUtils.mkdir_p(File.dirname output_html)
+
     file = File.new(output_html,"w")
     file.write(contents)
     file.close
@@ -470,22 +475,24 @@ task :generate_pdf do
     FileUtils.mkdir_p(File.dirname(output_pdf))
     puts "Writing PDF for #{htmlfile}"
 
-    command = "wkhtmltopdf \"#{output_html}\" \"#{output_pdf_tmp}\""
+    command = "wkhtmltopdf --user-style-sheet source/stylsheets/pdf.css \"#{output_html}\" \"#{output_pdf_tmp}\""
+    puts command
+    system(command)
 
     #there's a bug in wkhtmltopdf on OS X where the process hangs
     #so let's watch spawn a pseudo terminal and watch
     #stdout for "Done" and kill the process
-    begin
-      i=0
-      PTY.spawn( command ) do |stdout, stdin, pid|
-        stdout.each { |line|
-          i=i+1 
-          Process.kill("KILL",pid) if i==3
-        }
-      end
-    rescue PTY::ChildExited
-      puts "The child process exited!"
-    end
+    #begin
+    #  i=0
+    #  PTY.spawn( command ) do |stdout, stdin, pid|
+    #    stdout.each { |line|
+    #      i=i+1 
+    #      Process.kill("KILL",pid) if i==3
+    #    }
+    #  end
+    #rescue PTY::ChildExited
+    #  puts "The child process exited!"
+    #end
 
 
     #optimize the PDFs using ghostscript
